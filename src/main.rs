@@ -1,3 +1,12 @@
+mod camera;
+use crate::camera::Camera;
+
 fn main() {
-    println!("Hello, world!");
+    let mut proc_camera = Camera::new(callback).unwrap();
+    proc_camera.start_stream();
+    loop{}
+}
+
+fn callback(_frame: nokhwa::Buffer) {
+    println!("Callback!");
 }
