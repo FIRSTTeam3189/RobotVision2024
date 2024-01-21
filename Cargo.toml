@@ -6,8 +6,19 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+crossbeam-channel = "0.5.11"
+# GUI Libraries 
+eframe = { version = "0.25.0", optional = true }
+egui = { version = "0.25.0", optional = true }
+egui_extras = { version = "0.25.0", features = ["all_loaders"], optional = true}
+
+# Image Libraries
+image = "0.24.8"
 
 # Camera Input
 [dependencies.nokhwa]
 version = "0.10.3"
 features = ["input-native", "output-threaded"]
+
+[features]
+gui = ["dep:eframe", "dep:egui", "dep:egui_extras"]

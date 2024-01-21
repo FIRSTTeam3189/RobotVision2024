@@ -1,7 +1,4 @@
-use std::io::Error;
-
-use nokhwa::{CallbackCamera, Buffer, utils::{CameraIndex, RequestedFormat, RequestedFormatType}, pixel_format::RgbAFormat};
-
+use nokhwa::{CallbackCamera, Buffer, utils::{RequestedFormat, RequestedFormatType, Resolution, CameraFormat}, pixel_format::RgbFormat};
 
 pub struct Camera {
     pub callback_cam: CallbackCamera,
@@ -9,25 +6,32 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(callback: impl FnMut(Buffer) + Send + 'static) -> Result<Self, Error> {
+    pub fn new(index: u32, callback: impl FnMut(Buffer) + Send + 'static) -> Result<Self, ()> {
         // Setting the Camera Input format
-        let format = RequestedFormatType::AbsoluteHighestFrameRate;
-        // let format = RequestedFormatType::Exact(
-        //     CameraFormat::new(Resolution::new(1920, 1080),
-        //     nokhwa::utils::FrameFormat::RAWRGB,
-        //     30
-        // ));
-        let format = RequestedFormat::new::<RgbAFormat>(format);
+        let format = RequestedFormatType::Exact(
+            CameraFormat::new(Resolution::new(1920, 1080),
+            nokhwa::utils::FrameFormat::MJPEG,
+            30
+        ));
 
-        // Camera Indexing 
-        // TODO: Poll all devices and get Camera indexes
-        let index = CameraIndex::Index(0);
+        let format = RequestedFormat::new::<RgbFormat>(format);
+
         //Creates the camera with given settings
-        let x = CallbackCamera::new(index, format, callback).unwrap();
-        Ok(Camera {callback_cam: x, index: 0})
+        match CallbackCamera::new(nokhwa::utils::CameraIndex::Index(index), format, callback) {
+            Ok(camera) =>{
+                Ok(Camera {callback_cam: camera, index })
+            },
+            Err(_err) => {
+                Err(())
+            },
+        }
     }
 
     pub fn start_stream(&mut self) {
         let _ = self.callback_cam.open_stream();
+    }
+
+    pub fn stop_stream(&mut self) {
+        let _ = self.callback_cam.stop_stream();
     }
 }
