@@ -23,7 +23,7 @@ impl eframe::App for VisionApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
 
-            if let Ok(buffer) = self.image_receiver.try_recv() {
+            if let Ok(buffer) = self.image_receiver.recv() {
                 let size = [buffer.width() as _, buffer.height() as _];
                 let buffer = buffer.as_flat_samples();
                 let image = ColorImage::from_rgba_unmultiplied(size, buffer.as_slice());
@@ -35,7 +35,7 @@ impl eframe::App for VisionApp {
             }
 
             if let Some(texture) = self.texture.as_ref() {
-                ui.image(texture);
+                ui.image((texture.id(), ui.available_size()));
             } else {
                 ui.spinner();
             }

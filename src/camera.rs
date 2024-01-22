@@ -8,6 +8,7 @@ pub struct Camera {
 impl Camera {
     pub fn new(index: u32, callback: impl FnMut(Buffer) + Send + 'static) -> Result<Self, ()> {
         // Setting the Camera Input format
+        // let format = RequestedFormatType::AbsoluteHighestResolution;
         let format = RequestedFormatType::Exact(
             CameraFormat::new(Resolution::new(1920, 1080),
             nokhwa::utils::FrameFormat::MJPEG,

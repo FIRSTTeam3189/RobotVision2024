@@ -1,20 +1,39 @@
+use config::*;
 use image::{ImageBuffer, Rgba};
 use nokhwa::pixel_format::RgbAFormat;
+use process::Process;
+use crate::camera::Camera;
+use tokio::runtime::Handle;
+use std::env;
 
 mod camera;
-use crate::camera::Camera;
+mod process;
+mod config;
 
 #[cfg(feature = "gui")]
 mod gui;
 
-fn main() {
+#[tokio::main]
+async fn main() {
+    let runtime = Handle::current();
+    let env_path = env::current_dir().unwrap();
+    let calibration = CameraCalibration::load_from_file(env_path.join(CAL_FILE_NAME)).unwrap();
     let (tx, rx) = crossbeam_channel::bounded::<ImageBuffer<Rgba<u8>, Vec<u8>>>(1);
 
     let mut proc_camera = Camera::new(1, move |frame| {
-        let _ = tx.send(frame.decode_image::<RgbAFormat>().unwrap()); 
+        let _ = tx.send(frame.decode_image::<RgbAFormat>().unwrap());
     }).unwrap();
 
+    let proc_thread = Process::new(rx.clone(), calibration);
+
     proc_camera.start_stream();
+
+    // Process Thread
+    runtime.spawn(async move {
+        loop {
+            proc_thread.update();
+        }
+    });
 
     #[cfg(feature = "gui")]
     let _ = eframe::run_native(
@@ -24,10 +43,8 @@ fn main() {
     );
 
     #[cfg(not(feature = "gui"))]
-    loop { 
-        if false {
-            break;
-        }
+    loop {
+        if false { break; }
     }
 
     proc_camera.stop_stream();
