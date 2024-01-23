@@ -17,14 +17,19 @@ mod gui;
 async fn main() {
     let runtime = Handle::current();
     let env_path = env::current_dir().unwrap();
+    
+    // Calibration & Config Files
     let calibration = CameraCalibration::load_from_file(env_path.join(CAL_FILE_NAME)).unwrap();
+    let config = Config::load_from_file(env_path.join(CONFIG_FILE_NAME)).unwrap();
+
+    // Creating Channels
     let (tx, rx) = crossbeam_channel::bounded::<ImageBuffer<Rgba<u8>, Vec<u8>>>(1);
 
-    let mut proc_camera = Camera::new(1, move |frame| {
+    let mut proc_camera = Camera::new(config.camera_index, move |frame| {
         let _ = tx.send(frame.decode_image::<RgbAFormat>().unwrap());
     }).unwrap();
 
-    let proc_thread = Process::new(rx.clone(), calibration);
+    let proc_thread = Process::new(rx.clone(), calibration, config.detection_config);
 
     proc_camera.start_stream();
 

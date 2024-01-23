@@ -6,7 +6,7 @@ use serde::*;
 use imageproc::geometric_transformations::Projection;
 
 pub const CAL_FILE_NAME: &str = "cam-cal.json";
-pub const PARAM_FILE_NAME: &str = "config.json";
+pub const CONFIG_FILE_NAME: &str = "config.json";
 
 #[derive(Error, Debug)]
 pub enum CalibrationError {
@@ -186,6 +186,27 @@ impl CameraCalibration {
 impl From<&CameraCalibration> for TagParams {
     fn from(value: &CameraCalibration) -> Self {
         value.tag_params()
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+pub struct DetectionConfig {
+    pub families: Vec<AprilTagFamily>
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Config {
+    pub camera_index: u32,
+    pub detection_config: DetectionConfig
+}
+
+impl Config {
+    pub fn load_from_file<T: AsRef<Path>>(path: T) -> Result<Self, CalibrationError> {
+        let json_text = std::fs::read_to_string(path).unwrap();
+        match serde_json::from_str(&json_text) {
+            Ok(v) => Ok(v),
+            Err(_e) => Err(CalibrationError::LoadError(_e.to_string())),
+        }
     }
 }
 
