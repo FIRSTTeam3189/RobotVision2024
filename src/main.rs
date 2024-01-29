@@ -1,6 +1,5 @@
 use config::*;
-use image::{ImageBuffer, Rgba};
-use nokhwa::pixel_format::RgbAFormat;
+use image::DynamicImage;
 use process::Process;
 use crate::camera::Camera;
 use tokio::runtime::Handle;
@@ -23,18 +22,28 @@ async fn main() {
     let config = Config::load_from_file(env_path.join(CONFIG_FILE_NAME)).unwrap();
 
     // Creating Channels
-    let (tx, rx) = crossbeam_channel::bounded::<ImageBuffer<Rgba<u8>, Vec<u8>>>(1);
+    let (tx, rx) = crossbeam_channel::bounded::<DynamicImage>(1);
+    let mut proc_camera;
 
-    let mut proc_camera = Camera::new(config.camera_index, move |frame| {
-        let _ = tx.send(frame.decode_image::<RgbAFormat>().unwrap());
-    }).unwrap();
+    loop {
+        if let Ok(cam) = Camera::new(config.camera_index) {
+            proc_camera = cam;
+            break;
+        }
+    }
+    
 
     let proc_thread = Process::new(rx.clone(), calibration, config.detection_config);
-
     proc_camera.start_stream();
+
+    runtime.spawn(async move {
+        let mut proc_camera = proc_camera;
+        proc_camera.callback_thread(tx); 
+    });
 
     // Process Thread
     runtime.spawn(async move {
+        let mut proc_thread = proc_thread;
         loop {
             proc_thread.update();
         }
@@ -52,5 +61,5 @@ async fn main() {
         if false { break; }
     }
 
-    proc_camera.stop_stream();
+    // proc_camera.stop_stream();
 }

@@ -191,7 +191,7 @@ impl From<&CameraCalibration> for TagParams {
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct DetectionConfig {
-    pub families: Vec<AprilTagFamily>
+    pub families: AprilTagFamily
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

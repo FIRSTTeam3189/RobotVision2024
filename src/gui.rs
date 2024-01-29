@@ -1,16 +1,16 @@
 use egui::{ColorImage, TextureHandle}; 
 use eframe::egui;
-use image::{ImageBuffer, Rgba};
+use image::{ImageBuffer, Rgba, DynamicImage};
 use crossbeam_channel::*;
 
 pub struct VisionApp {
     image: Option<ColorImage>,
     texture: Option<TextureHandle>,
-    image_receiver: Receiver<ImageBuffer<Rgba<u8>, Vec<u8>>>,
+    image_receiver: Receiver<DynamicImage>,
 }
 
 impl VisionApp {
-    pub fn new(image_receiver: Receiver<ImageBuffer<Rgba<u8>, Vec<u8>>>) -> VisionApp {
+    pub fn new(image_receiver: Receiver<DynamicImage>) -> VisionApp {
         VisionApp {
             image: None,
             texture: None,
@@ -25,8 +25,8 @@ impl eframe::App for VisionApp {
 
             if let Ok(buffer) = self.image_receiver.recv() {
                 let size = [buffer.width() as _, buffer.height() as _];
-                let buffer = buffer.as_flat_samples();
-                let image = ColorImage::from_rgba_unmultiplied(size, buffer.as_slice());
+                let buffer = buffer.as_flat_samples_u8().unwrap();
+                let image = ColorImage::from_rgba_unmultiplied(size, &buffer.as_slice());
                 self.image = Some(image);
             }
 

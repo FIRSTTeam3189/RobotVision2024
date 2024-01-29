@@ -1,12 +1,14 @@
-use nokhwa::{CallbackCamera, Buffer, utils::{RequestedFormat, RequestedFormatType, Resolution, CameraFormat}, pixel_format::RgbFormat};
+use crossbeam_channel::Sender;
+use image::DynamicImage;
+use nokhwa::{Camera as Cam, utils::{RequestedFormat, RequestedFormatType, Resolution, CameraFormat}, pixel_format::{RgbAFormat, RgbFormat}};
 
 pub struct Camera {
-    pub callback_cam: CallbackCamera,
+    pub camera: Cam,
     pub index: u32
 }
 
 impl Camera {
-    pub fn new(index: u32, callback: impl FnMut(Buffer) + Send + 'static) -> Result<Self, ()> {
+    pub fn new(index: u32) -> Result<Self, ()> {
         // Setting the Camera Input format
         // let format = RequestedFormatType::AbsoluteHighestResolution;
         let format = RequestedFormatType::Exact(
@@ -18,9 +20,9 @@ impl Camera {
         let format = RequestedFormat::new::<RgbFormat>(format);
 
         //Creates the camera with given settings
-        match CallbackCamera::new(nokhwa::utils::CameraIndex::Index(index), format, callback) {
+        match Cam::new(nokhwa::utils::CameraIndex::Index(index), format) {
             Ok(camera) =>{
-                Ok(Camera {callback_cam: camera, index })
+                Ok(Camera {camera, index })
             },
             Err(_err) => {
                 Err(())
@@ -29,10 +31,20 @@ impl Camera {
     }
 
     pub fn start_stream(&mut self) {
-        let _ = self.callback_cam.open_stream();
+        let _ = self.camera.open_stream();
     }
 
-    pub fn stop_stream(&mut self) {
-        let _ = self.callback_cam.stop_stream();
+    pub fn _stop_stream(&mut self) {
+        let _ = self.camera.stop_stream();
     }
+
+    pub fn callback_thread(&mut self, tx: Sender<DynamicImage>) {
+        loop {
+            if let Ok(frame) = self.camera.frame(){
+                let image = frame.decode_image::<RgbAFormat>().unwrap();
+                let image = DynamicImage::from(image);
+                let _ = tx.send(image);
+            }
+        }
+    }   
 }

@@ -196,6 +196,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "apriltag-image"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1219652f0a8d9c22af13d478ab91a357911fee3604b5b12171b1271c86859cb3"
+dependencies = [
+ "apriltag",
+ "image",
+]
+
+[[package]]
 name = "apriltag-sys"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3822,6 +3832,7 @@ name = "vision"
 version = "2024.0.1"
 dependencies = [
  "apriltag",
+ "apriltag-image",
  "apriltag-sys",
  "crossbeam-channel",
  "eframe",
