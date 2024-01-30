@@ -8,6 +8,7 @@ use std::env;
 mod camera;
 mod process;
 mod config;
+mod nt;
 
 #[cfg(feature = "gui")]
 mod gui;
@@ -23,6 +24,8 @@ async fn main() {
 
     // Creating Channels
     let (tx, rx) = crossbeam_channel::bounded::<DynamicImage>(1);
+    
+    // --------------------- Process Camera ---------------------------
     let mut proc_camera;
 
     loop {
@@ -31,24 +34,26 @@ async fn main() {
             break;
         }
     }
-    
+    // -----------------------------------------------------------------
 
-    let proc_thread = Process::new(rx.clone(), calibration, config.detection_config);
     proc_camera.start_stream();
 
-    runtime.spawn(async move {
-        let mut proc_camera = proc_camera;
+    // ------------------- Process Thread ------------------------------
+    let mut proc_thread = Process::new(rx.clone(), calibration, config.detection_config);
+
+    runtime.spawn(async move{
         proc_camera.callback_thread(tx); 
     });
 
     // Process Thread
     runtime.spawn(async move {
-        let mut proc_thread = proc_thread;
         loop {
             proc_thread.update();
         }
     });
+    // -----------------------------------------------------------------
 
+    // GUI
     #[cfg(feature = "gui")]
     let _ = eframe::run_native(
         "Vision-App", 

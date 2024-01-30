@@ -21,7 +21,10 @@ impl Camera {
 
         //Creates the camera with given settings
         match Cam::new(nokhwa::utils::CameraIndex::Index(index), format) {
-            Ok(camera) =>{
+            Ok(mut camera) =>{
+                let _ = camera.set_camera_control(nokhwa::utils::KnownCameraControl::Brightness, nokhwa::utils::ControlValueSetter::Integer(100));
+                let _ = camera.set_camera_control(nokhwa::utils::KnownCameraControl::Exposure, nokhwa::utils::ControlValueSetter::Integer(0));
+                let _ = camera.set_camera_control(nokhwa::utils::KnownCameraControl::Gain, nokhwa::utils::ControlValueSetter::Integer(100));
                 Ok(Camera {camera, index })
             },
             Err(_err) => {

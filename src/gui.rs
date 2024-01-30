@@ -1,6 +1,6 @@
 use egui::{ColorImage, TextureHandle}; 
 use eframe::egui;
-use image::{ImageBuffer, Rgba, DynamicImage};
+use image::DynamicImage;
 use crossbeam_channel::*;
 
 pub struct VisionApp {

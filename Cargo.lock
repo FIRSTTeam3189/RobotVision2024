@@ -3833,7 +3833,6 @@ version = "2024.0.1"
 dependencies = [
  "apriltag",
  "apriltag-image",
- "apriltag-sys",
  "crossbeam-channel",
  "eframe",
  "egui",
