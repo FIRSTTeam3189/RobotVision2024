@@ -10,6 +10,8 @@ mod process;
 mod config;
 mod nt;
 
+use nt::client::*;
+
 #[cfg(feature = "gui")]
 mod gui;
 
@@ -24,6 +26,9 @@ async fn main() {
 
     // Creating Channels
     let (tx, rx) = crossbeam_channel::bounded::<DynamicImage>(1);
+
+    // let mut result = Client::connect("10.31.89.2:5810").await.unwrap();
+    // result.send_message();
     
     // --------------------- Process Camera ---------------------------
     let mut proc_camera;
