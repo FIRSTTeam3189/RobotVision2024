@@ -1,5 +1,5 @@
 # Vision 2024
-    Vision subsystem for detecting Apriltags
+Vision subsystem for detecting Apriltags. Gets input from a camera and uses Apriltag library to get Tag Rotation and Translation. It starts a server for a client to get the data from the detections.  
 
 ## Setup
  1. Install apriltag C lib

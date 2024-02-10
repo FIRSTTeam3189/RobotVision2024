@@ -5,9 +5,6 @@ use thiserror::Error;
 use serde::*; 
 use imageproc::geometric_transformations::Projection;
 
-pub const CAL_FILE_NAME: &str = "cam-cal.json";
-pub const CONFIG_FILE_NAME: &str = "config.json";
-
 #[derive(Error, Debug)]
 pub enum CalibrationError {
     #[error("Failed to convert into projection matrix: {0}")]

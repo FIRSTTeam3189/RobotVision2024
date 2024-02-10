@@ -8,12 +8,16 @@ use std::env;
 mod camera;
 mod process;
 mod config;
-mod nt;
+mod server;
 
-use nt::client::*;
+use server::server::*;
 
 #[cfg(feature = "gui")]
 mod gui;
+
+pub const CAL_FILE_NAME: &str = "configs\\cam-cal.json";
+pub const CONFIG_FILE_NAME: &str = "configs\\config.json";
+pub const SERVER_FILE_NAME: &str = "configs\\server.json";
 
 #[tokio::main]
 async fn main() {
@@ -23,12 +27,11 @@ async fn main() {
     // Calibration & Config Files
     let calibration = CameraCalibration::load_from_file(env_path.join(CAL_FILE_NAME)).unwrap();
     let config = Config::load_from_file(env_path.join(CONFIG_FILE_NAME)).unwrap();
+    let server_config = server::config::ServerConfig::load_from_file(env_path.join(SERVER_FILE_NAME)).unwrap();
 
     // Creating Channels
     let (tx, rx) = crossbeam_channel::bounded::<DynamicImage>(1);
-
-    // let mut result = Client::connect("10.31.89.2:5810").await.unwrap();
-    // result.send_message();
+    let mut server = Server::start(server_config).await.unwrap();
     
     // --------------------- Process Camera ---------------------------
     let mut proc_camera;
@@ -53,6 +56,7 @@ async fn main() {
     // Process Thread
     runtime.spawn(async move {
         loop {
+            server.publish();
             proc_thread.update();
         }
     });
