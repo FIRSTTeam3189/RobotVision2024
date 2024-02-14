@@ -1,7 +1,10 @@
 use config::*;
 use image::DynamicImage;
 use process::Process;
+use tokio::net;
 use crate::camera::Camera;
+use crate::network::*;
+use crate::process::VisionData;
 use tokio::runtime::Handle;
 use std::env;
 
@@ -9,15 +12,20 @@ mod camera;
 mod process;
 mod config;
 mod server;
-
-use server::server::*;
+mod network;
 
 #[cfg(feature = "gui")]
 mod gui;
 
-pub const CAL_FILE_NAME: &str = "configs\\cam-cal.json";
-pub const CONFIG_FILE_NAME: &str = "configs\\config.json";
-pub const SERVER_FILE_NAME: &str = "configs\\server.json";
+#[cfg(feature = "nt")]
+mod nt;
+
+#[cfg(not(feature = "nt"))]
+mod server;
+
+pub const CAL_FILE_NAME: &str = "configs/cam-cal.json";
+pub const CONFIG_FILE_NAME: &str = "configs/config.json";
+pub const SERVER_FILE_NAME: &str = "configs/network.json";
 
 #[tokio::main]
 async fn main() {
@@ -27,13 +35,26 @@ async fn main() {
     // Calibration & Config Files
     let calibration = CameraCalibration::load_from_file(env_path.join(CAL_FILE_NAME)).unwrap();
     let config = Config::load_from_file(env_path.join(CONFIG_FILE_NAME)).unwrap();
-    let server_config = server::config::ServerConfig::load_from_file(env_path.join(SERVER_FILE_NAME)).unwrap();
+    let network_config = NetworkConfig::load_from_file(env_path.join(SERVER_FILE_NAME)).unwrap();
+    println!("Loaded Configs!");
 
     // Creating Channels
-    let (tx, rx) = crossbeam_channel::bounded::<DynamicImage>(1);
-    let mut server = Server::start(server_config).await.unwrap();
+    let (image_tx, image_rx) = crossbeam_channel::bounded::<DynamicImage>(1);
+    let (data_tx, data_rx) = crossbeam_channel::bounded::<VisionData>(1);
+    println!("Created Channels!");
+
+    // ------------------- Server Thread -------------------------------
+   let mut network = Network::new(network_config, data_rx);
+   network.update(&runtime).await;
+   
+    println!("Network Thread Started!");
+
+    // ----------------------------------------------------------------
     
     // --------------------- Process Camera ---------------------------
+
+
+    println!("Finding Camera...");
     let mut proc_camera;
 
     loop {
@@ -42,32 +63,35 @@ async fn main() {
             break;
         }
     }
+
     // -----------------------------------------------------------------
 
     proc_camera.start_stream();
 
-    // ------------------- Process Thread ------------------------------
-    let mut proc_thread = Process::new(rx.clone(), calibration, config.detection_config);
-
+    // Camera Callback Thread
     runtime.spawn(async move{
-        proc_camera.callback_thread(tx); 
+        proc_camera.callback_thread(image_tx); 
     });
+    println!("Found Camera! & Stated Callback Thread!");
+    // ------------------- Process Thread ------------------------------
+    println!("Starting Process Thread!");
+    let mut proc_thread = Process::new(image_rx.clone(), data_tx, calibration, config.detection_config);
 
     // Process Thread
     runtime.spawn(async move {
         loop {
-            server.publish();
             proc_thread.update();
         }
     });
+    println!("Started Process Thread!");
     // -----------------------------------------------------------------
 
     // GUI
-    #[cfg(feature = "gui")]
+    #[cfg(feature = "gui")] 
     let _ = eframe::run_native(
         "Vision-App", 
         eframe::NativeOptions::default(),
-        Box::new(|_c| Box::new(gui::VisionApp::new(rx)))
+        Box::new(|_c| Box::new(gui::VisionApp::new(image_rx)))
     );
 
     #[cfg(not(feature = "gui"))]

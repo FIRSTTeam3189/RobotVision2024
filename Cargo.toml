@@ -25,6 +25,10 @@ thiserror = "1.0.56"
 apriltag = "0.4.0"
 apriltag-image = "0.1.0"
 nalgebra = "0.32.3"
+bondrewd = { version = "0.1.14", features = ["derive"] }
+
+#Backup Libraries
+network-tables = { version = "0.1.3", optional = true, features = ["client-v4"] }
 
 # Camera Input
 [dependencies.nokhwa]
@@ -33,8 +37,12 @@ features = ["input-native", "output-threaded"]
 
 [features]
 gui = ["dep:eframe", "dep:egui", "dep:egui_extras"]
+nt = ["dep:network-tables"]
 
 # Comp Distro
 [profile.comp]
 inherits = "release"
 lto = true
+
+[target.aarch64-unknown-linux-gnu]
+linker = "zcc"

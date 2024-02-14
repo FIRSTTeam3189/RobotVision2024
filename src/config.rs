@@ -208,6 +208,25 @@ impl Config {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
+pub(crate) struct NetworkConfig {
+    pub server_port: u16,
+    pub nt_ip: [u8; 4],
+    pub nt_port: u16
+}
+
+impl NetworkConfig {
+    pub fn load_from_file<T: AsRef<Path>>(path: T) -> Result<Self, Error> {
+        let file = std::fs::read_to_string(path).unwrap();
+        match serde_json::from_str(&file) {
+            Ok(v) => Ok(v),
+            Err(err) => {
+                panic!("Failed to load Network Config: [{}]", err);
+            },
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub enum AprilTagFamily {
     #[default]
     Tag16H5,

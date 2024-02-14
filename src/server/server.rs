@@ -1,9 +1,7 @@
-use std::str::FromStr;
+use std::net::SocketAddr;
 
-use crate::server::error::ServerError;
-use tokio::{io::AsyncWriteExt, net::*};
-
-use super::config::ServerConfig;
+use crate::{server::error::ServerError, NetworkConfig};
+use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::*};
 
 pub(crate) struct Server {
     listener: TcpListener,
@@ -11,10 +9,14 @@ pub(crate) struct Server {
 }
 
 impl Server {
-    pub async fn start(config: ServerConfig) -> Result<Server, ServerError> {
-        match TcpListener::bind((String::from_str("0.0.0.0:").unwrap() + &config.port.to_string()).as_str()).await {
+    pub async fn start(config: NetworkConfig) -> Result<Server, ServerError> {
+        let ip = SocketAddr::from(([0,0,0,0], config.server_port as u16));
+        match TcpListener::bind(&ip).await {
             Ok(listener) => {
-                let (stream, _addr) = listener.accept().await.unwrap();
+                println!("Listener Started!");
+                let (stream, addr) = listener.accept().await.unwrap();
+                println!("{}", addr.to_string());
+                println!("Found Connection to Server!");
                 Ok(Server { listener, stream })
             },
 
@@ -25,7 +27,12 @@ impl Server {
         }
     }
 
-    pub fn publish(&mut self) {
-        let _ = self.stream.write(&[0; 128]);
+    pub fn publish<'a>(&mut self, msg: &'a [u8]) {
+        let _ = self.stream.write(msg);
+    }
+
+    pub async fn read(&mut self) -> usize {
+        let mut x = vec![];
+        self.stream.read(&mut x).await.unwrap()
     }
 }
