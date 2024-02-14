@@ -1,3 +1,46 @@
+//! # Interface for VisionData
+//!
+//! This module contains the `DataInterface`, `DataError`, `SyncSequenceCodec` objects and the `open_serial_port`, `open_tcp_stream` functions.
+//!
+//! The `DataInterface` is a wrapper around sending and receiving data from any async read/write source for `VisionData` packets.
+//! This allows us to use either a TCP, and Serial port (or other stream types implementing `AsyncRead` and `AsyncWrite`) in a generic way and change out the interface to talk to the robot without changing the rest of the code.
+//!
+//! The `open_serial_port` and `open_tcp_stream` functions are helper functions to open up a serial port or TCP stream with the desired settings and create an appropriate `DataInterface` object.
+//!
+//! The `SyncSequenceCodec` is a `tokio_util::codec::Decoder` and `tokio_util::codec::Encoder` for the `Framed` object in the `DataInterface` to handle the sync sequence bytes for reading and writing `VisionData` packets.
+//!
+//! The `DataError` is the error type for any data interface errors, including Serial/TCP/UDP/IO/etc... errors.
+//!
+//! The `DEFAULT_SYNC_BYTES` is the synchronization bytes to append to the beginning of every `VisionData` packet.
+//!
+//! # Example
+//! ```no_run
+//! use std::path::Path;
+//! use interface::{open_serial_port, DataError};
+//!
+//! #[tokio::main]
+//! async fn main() -> Result<(), DataError> {
+//!    let port = Path::new("/dev/ttyUSB0");
+//!    let mut data = open_serial_port(port).await?;
+//!
+//!    // Write "Hello, World!" to the serial port
+//!    data.write_bytes(b"Hello, World!").await?;
+//!
+//!    // Write some `VisionData` to the serial port
+//!    data.write_vision_data(VisionData::new(
+//!                            true,
+//!                             tag.id() as u64,
+//!                             0.0,
+//!                             [rotation.0, rotation.1, rotation.2],
+//!                             [transform.x, transform.y, transform.z]
+//!    )).await?;
+//!   // Read a response from the serial port
+//!   let response = data.read_frame().await?;
+//!   println!("Response: {:?}", response);
+//!
+//!   Ok(())
+//! }
+//! ```
 use std::io::Read;
 use std::path::Path;
 use std::borrow::BorrowMut;
