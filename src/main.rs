@@ -22,6 +22,7 @@ mod nt;
 
 #[cfg(not(feature = "nt"))]
 mod server;
+mod interface;
 
 pub const CAL_FILE_NAME: &str = "configs/cam-cal.json";
 pub const CONFIG_FILE_NAME: &str = "configs/config.json";
@@ -80,7 +81,7 @@ async fn main() {
     // Process Thread
     runtime.spawn(async move {
         loop {
-            proc_thread.update();
+            //proc_thread.update();
         }
     });
     println!("Started Process Thread!");
