@@ -2,5 +2,11 @@
     "camera_index": 0,
     "detection_config": {
         "families": "Tag36H11"
+    },
+    "interface": {
+        "nt_ip": [10, 31, 89, 2],
+        "nt_port": 5000,
+        "server_port": 8010,
+        "serial_port": "/dev/ttyS9"
     }
 }

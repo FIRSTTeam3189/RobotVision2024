@@ -41,12 +41,12 @@
 //!   Ok(())
 //! }
 //! ```
-use std::io::Read;
-use std::path::Path;
+use std::{net::SocketAddr, path::Path};
 use std::borrow::BorrowMut;
 use bondrewd::Bitfields;
 
 use tokio::io::{AsyncRead, AsyncWrite};
+use tokio::net::TcpListener;
 use tokio_util::codec::{Framed, Decoder, Encoder};
 use tokio_serial::{DataBits, FlowControl, Parity, SerialPortBuilderExt, StopBits};
 use tokio_util::bytes::{Buf, Bytes, BytesMut};
@@ -55,7 +55,7 @@ use thiserror::Error;
 
 use futures::{future, SinkExt, StreamExt, TryStreamExt};
 use crate::process::VisionData;
-
+use crate::InterfaceConfig;
 
 /// Error type for any data interface errors.
 ///
@@ -74,6 +74,8 @@ pub enum DataError {
     /// Not found error
     #[error("Not found: {0}")]
     NotFound(String),
+    #[error("Server Creation Failed: {0}")]
+    ServerCreationFailed(std::io::Error),
     /// No response error
     #[error("No response")]
     NoResponse,
@@ -101,8 +103,8 @@ pub const DEFAULT_FLOW_CONTROL: FlowControl = FlowControl::None;
 /// opening, writing, and reading from a serial port.
 ///
 /// This will open up the serial port with the desired default settings then create an appropriate `DataInterface` object.
-pub async fn open_serial_port<P: AsRef<Path>>(port: P) -> Result<DataInterface, DataError> {
-    let port = port.as_ref();
+pub async fn open_serial_port(config: &InterfaceConfig) -> Result<DataInterface, DataError> {
+    let port = Path::new(&config.serial_port);
     // Check that the path exists
     if !port.exists() {
         return Err(DataError::NotFound(format!("Serial port not found: {:?}", port)));
@@ -129,6 +131,28 @@ pub async fn open_tcp_stream<S: AsRef<str>>(ip: S, port: u16) -> Result<DataInte
     Ok(DataInterface::new(Box::new(stream)))
 }
 // --- Implementation of TCP ---
+
+// --- Implemantation of TCP Server ---
+/// This is a wrapper around tokio::net::Listener & tokio::net::Stream to create a listener and start listening for connections
+/// and start a stream after a connection has been accepted 
+pub async fn start_tcp_server(config: &InterfaceConfig) -> Result<DataInterface, DataError>{
+    let ip = SocketAddr::from(([0,0,0,0], config.server_port));
+    match TcpListener::bind(&ip).await {
+        Ok(listener) => {
+            println!("Listener Started!");
+            let (stream, addr) = listener.accept().await.unwrap();
+            println!("{}", addr.to_string());
+            println!("Found Connection to Server!");
+            Ok(DataInterface::new(Box::new(stream)))
+        }
+
+        Err(err) => {
+            Err(DataError::ServerCreationFailed(err))
+        }
+    }
+}
+// --- Implemantation of TCP Server ---
+
 
 // --- Implementation of SyncSequenceCodec ---
 /// The data structure object containing the sync sequence bytes

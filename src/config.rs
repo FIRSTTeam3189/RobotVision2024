@@ -1,9 +1,9 @@
-use std::path::Path;
 use apriltag::*;
-use nalgebra::Matrix3x1;
-use thiserror::Error;
-use serde::*; 
 use imageproc::geometric_transformations::Projection;
+use nalgebra::Matrix3x1;
+use serde::*;
+use std::path::Path;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum CalibrationError {
@@ -188,13 +188,14 @@ impl From<&CameraCalibration> for TagParams {
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct DetectionConfig {
-    pub families: AprilTagFamily
+    pub families: AprilTagFamily,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
     pub camera_index: u32,
-    pub detection_config: DetectionConfig
+    pub detection_config: DetectionConfig,
+    pub interface: InterfaceConfig
 }
 
 impl Config {
@@ -208,22 +209,11 @@ impl Config {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
-pub(crate) struct NetworkConfig {
-    pub server_port: u16,
+pub struct InterfaceConfig {
     pub nt_ip: [u8; 4],
-    pub nt_port: u16
-}
-
-impl NetworkConfig {
-    pub fn load_from_file<T: AsRef<Path>>(path: T) -> Result<Self, Error> {
-        let file = std::fs::read_to_string(path).unwrap();
-        match serde_json::from_str(&file) {
-            Ok(v) => Ok(v),
-            Err(err) => {
-                panic!("Failed to load Network Config: [{}]", err);
-            },
-        }
-    }
+    pub nt_port: u16,
+    pub server_port: u16,
+    pub serial_port: String
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]

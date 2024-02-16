@@ -42,6 +42,9 @@ features = ["input-native", "output-threaded"]
 [features]
 gui = ["dep:eframe", "dep:egui", "dep:egui_extras"]
 nt = ["dep:network-tables"]
+serial = []
+server = []
+default = ["serial"]
 
 # Comp Distro
 [profile.comp]

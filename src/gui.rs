@@ -1,7 +1,7 @@
-use egui::{ColorImage, TextureHandle}; 
-use eframe::egui;
-use image::DynamicImage;
 use crossbeam_channel::*;
+use eframe::egui;
+use egui::{ColorImage, TextureHandle};
+use image::DynamicImage;
 
 pub struct VisionApp {
     image: Option<ColorImage>,
@@ -22,7 +22,6 @@ impl VisionApp {
 impl eframe::App for VisionApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-
             if let Ok(buffer) = self.image_receiver.recv() {
                 let size = [buffer.width() as _, buffer.height() as _];
                 let buffer = buffer.as_flat_samples_u8().unwrap();
@@ -39,7 +38,7 @@ impl eframe::App for VisionApp {
             } else {
                 ui.spinner();
             }
-    
+
             ctx.request_repaint();
         });
     }
@@ -47,5 +46,4 @@ impl eframe::App for VisionApp {
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         std::process::exit(0);
     }
-
 }
