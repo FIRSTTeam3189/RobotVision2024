@@ -125,10 +125,17 @@ pub async fn open_serial_port(config: &InterfaceConfig) -> Result<DataInterface,
 /// opening, writing, and reading from a TCP stream.
 ///
 /// This will open up the TCP stream with the desired IP and port then create an appropriate `DataInterface` object.
-pub async fn open_tcp_stream<S: AsRef<str>>(ip: S, port: u16) -> Result<DataInterface, DataError> {
+pub async fn _open_tcp_stream<S: AsRef<str>>(ip: S, port: u16) -> Result<DataInterface, DataError> {
     let ip = ip.as_ref();
-    let stream = tokio::net::TcpStream::connect(format!("{}:{}", ip, port)).await?;
-    Ok(DataInterface::new(Box::new(stream)))
+    match tokio::net::TcpStream::connect(format!("{}:{}", ip, port)).await {
+        Ok(stream) => {
+            Ok(DataInterface::new(Box::new(stream)))
+        },
+        Err(_) => {
+            Err(DataError::NoResponse)
+        },
+    }
+    
 }
 // --- Implementation of TCP ---
 
@@ -238,7 +245,7 @@ impl DataInterface {
     /// Reads a response from the data interface.
     ///
     /// This will read a response from the data interface and return the bytes read, filtering out empty responses.
-    pub async fn read_frame(&mut self) -> Result<Vec<u8>, DataError> {
+    pub async fn _read_frame(&mut self) -> Result<Vec<u8>, DataError> {
         let bytes = self
             .framed
             .borrow_mut()

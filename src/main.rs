@@ -3,6 +3,7 @@ use crate::interface::*;
 use crate::process::VisionData;
 use config::*;
 use image::DynamicImage;
+use nokhwa::query;
 use process::Process;
 use std::env;
 use tokio::runtime::Handle;
@@ -43,6 +44,8 @@ async fn main() {
         #[cfg(feature = "server")]
         let mut data_interface = start_tcp_server(&config.interface).await.unwrap();
 
+        println!("Connected to interface!");
+
         // #[cfg(feature = "nt")]
         // let mut net = NT::new(network_config).await;
         
@@ -58,7 +61,7 @@ async fn main() {
         }
     });
 
-    println!("Network Thread Started!");
+    println!("Comms Thread Started!");
 
     // ----------------------------------------------------------------
 
@@ -66,9 +69,26 @@ async fn main() {
 
     println!("Finding Camera...");
     let mut proc_camera;
+    let mut cam_id = config.camera_index;
 
     loop {
-        if let Ok(cam) = Camera::new(config.camera_index) {
+        match query(nokhwa::utils::ApiBackend::Auto) {
+            Ok(cameras) =>  {
+                match cameras[0].index().as_index() {
+                    Ok(index) => {
+                        cam_id = index;
+                    },
+                    Err(err) => {
+                        println!("Couldn't find camera [{}]", err);
+                    }
+                }
+            },
+            Err(err) => {
+                println!("Couldn't obtain backend to find camera [{}]", err);
+            }
+        }
+        
+        if let Ok(cam) = Camera::new(cam_id) {
             proc_camera = cam;
             break;
         }
@@ -83,6 +103,7 @@ async fn main() {
         proc_camera.callback_thread(image_tx);
     });
     println!("Found Camera! & Stated Callback Thread!");
+
     // ------------------- Process Thread ------------------------------
     println!("Starting Process Thread!");
 
