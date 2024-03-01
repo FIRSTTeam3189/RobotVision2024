@@ -266,6 +266,7 @@ impl DataInterface {
     /// Writes a VisionData packet to the data interface.
     pub async fn write_vision_data(&mut self, data: VisionData) -> Result<(), DataError> {
         let bytes = data.into_bytes();
+        println!("Bytes: {:X?}", bytes);
         self.write_bytes(&bytes).await
     }
 }

@@ -1,5 +1,5 @@
 {
-    "camera_index": 0,
+    "camera_index": 1,
     "detection_config": {
         "families": "Tag36H11"
     },
@@ -7,6 +7,6 @@
         "nt_ip": [10, 31, 89, 2],
         "nt_port": 5000,
         "server_port": 8010,
-        "serial_port": "/dev/ttyUSB0"
+        "serial_port": "/dev/ttyS3"
     }
 }

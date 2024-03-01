@@ -1,5 +1,6 @@
 /target
 .vscode/
-images/
+images-webcam/
+images-main/
 build/
 .idea/

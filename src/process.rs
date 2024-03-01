@@ -1,3 +1,5 @@
+use std::time::{Duration, UNIX_EPOCH};
+
 use crate::{config::CameraCalibration, DetectionConfig};
 use apriltag::{Detector, DetectorBuilder, Image, TagParams};
 use apriltag_image::prelude::*;
@@ -7,13 +9,14 @@ use image::*;
 use nalgebra::*;
 
 #[derive(Debug, Clone, Bitfields)]
-#[bondrewd(default_endianness = "le")]
+#[bondrewd(default_endianness = "le", enforce_bytes = 65)]
 pub struct VisionData {
+    #[bondrewd(bit_length = 8)]
     pub detected: bool,
     pub tag_id: u64,
     pub timestamp: f64,
-    pub rotation: [f64; 3],
     pub translation: [f64; 3],
+    pub rotation: [f64; 3],
 }
 
 impl VisionData {
@@ -21,15 +24,15 @@ impl VisionData {
         detected: bool,
         tag_id: u64,
         timestamp: f64,
-        rotation: [f64; 3],
         translation: [f64; 3],
+        rotation: [f64; 3],
     ) -> Self {
         VisionData {
             detected,
             tag_id,
             timestamp,
-            rotation,
             translation,
+            rotation
         }
     }
 }
@@ -68,6 +71,7 @@ impl Process {
         if let Ok(image) = self.image_rx.recv() {
             let image_buf = Image::from_image_buffer(&image.to_luma8());
             let detections = self.detector.detect(&image_buf);
+            let timestamp = std::time::SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or(Duration::from_micros(1)).as_secs_f64();
 
             if !detections.is_empty() {
                 let tag = &detections[0];
@@ -78,35 +82,25 @@ impl Process {
                         );
                         rotation.renormalize();
                         let rotation = rotation.euler_angles();
-                        println!(
-                            "Rotation: X: {0}, Y: {1}, Z: {2}",
-                            rotation.0.to_degrees(),
-                            rotation.1.to_degrees(),
-                            rotation.2.to_degrees()
-                        );
 
                         let transform: Translation3<f64> =
                             MatrixView3x1::from_slice(pose.translation().data())
                                 .into_owned()
                                 .into();
-                        println!(
-                            "Translation: X:{0} Y:{1} Z: {2}",
-                            transform.x, transform.y, transform.z
-                        );
 
                         let _ = self.data_tx.send(VisionData::new(
                             true,
                             tag.id() as u64,
-                            0.0,
-                            [rotation.0, rotation.1, rotation.2],
+                            timestamp,
                             [transform.x, transform.y, transform.z],
+                            [rotation.0, rotation.1, rotation.2],
                         ));
                     }
                 } else {
                     let _ = self.data_tx.send(VisionData::new(
                         false,
                         0,
-                        0.0,
+                        timestamp,
                         [0.0, 0.0, 0.0],
                         [0.0, 0.0, 0.0],
                     ));
@@ -115,7 +109,7 @@ impl Process {
                 let _ = self.data_tx.send(VisionData::new(
                     false,
                     0,
-                    0.0,
+                    timestamp,
                     [0.0, 0.0, 0.0],
                     [0.0, 0.0, 0.0],
                 ));

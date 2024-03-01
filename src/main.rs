@@ -3,7 +3,7 @@ use crate::interface::*;
 use crate::process::VisionData;
 use config::*;
 use image::DynamicImage;
-use nokhwa::query;
+// use nokhwa::query;
 use process::Process;
 use std::env;
 use tokio::runtime::Handle;
@@ -38,12 +38,19 @@ async fn main() {
     // ------------------- Server Thread -------------------------------
 
     runtime.spawn(async move {
-        #[cfg(feature = "serial")]
-        let mut data_interface = open_serial_port(&config.interface).await.unwrap();
+        let mut data_interface = None;
 
-        #[cfg(feature = "server")]
-        let mut data_interface = start_tcp_server(&config.interface).await.unwrap();
+        #[cfg(feature = "serial")] {
+            println!("Serial Initialzied... [Port: {}]", &config.interface.serial_port);
+            data_interface = Some(open_serial_port(&config.interface).await.unwrap());
+        }
 
+        #[cfg(feature = "server")] {
+            println!("Server Initializing...");
+            data_interface = Some(start_tcp_server(&config.interface).await.unwrap());
+        }
+
+        let mut data_interface = data_interface.unwrap();
         println!("Connected to interface!");
 
         // #[cfg(feature = "nt")]
@@ -54,9 +61,7 @@ async fn main() {
                 Ok(data) => {
                     let _ = data_interface.write_vision_data(data).await;
                 },
-                Err(_) => {
-
-                },
+                Err(_) => {},
             }
         }
     });
@@ -72,22 +77,26 @@ async fn main() {
     let mut cam_id = config.camera_index;
 
     loop {
-        match query(nokhwa::utils::ApiBackend::Auto) {
-            Ok(cameras) =>  {
-                match cameras[0].index().as_index() {
-                    Ok(index) => {
-                        cam_id = index;
-                    },
-                    Err(err) => {
-                        println!("Couldn't find camera [{}]", err);
-                    }
-                }
-            },
-            Err(err) => {
-                println!("Couldn't obtain backend to find camera [{}]", err);
-            }
-        }
+        // match query(nokhwa::utils::ApiBackend::Auto) {
+        //     Ok(cameras) =>  {
+        //         println!("Found a list of Cameras...");
+        //         match cameras[0].index().as_index() {
+        //             Ok(index) => {
+        //                 println!("Found camera id...");
+        //                 cam_id = index;
+        //                 println!("ID: {}", cam_id);
+        //             },
+        //             Err(err) => {
+        //                 println!("Couldn't find camera [{}]", err);
+        //             }
+        //         }
+        //     },
+        //     Err(err) => {
+        //         println!("Couldn't obtain backend to find camera [{}]", err);
+        //     }
+        // }
         
+        println!("Getting Camera...");
         if let Ok(cam) = Camera::new(cam_id) {
             proc_camera = cam;
             break;

@@ -1,1 +1,1 @@
-scp -r %cd%\build\ root@10.31.89.69:\home\orangepi\Vision\
+scp -r %cd%\build\ root@[fe80::6b4e:5127:9a39:a7d7]:\home\orangepi\Vision\
